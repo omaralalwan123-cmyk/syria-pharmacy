@@ -1,0 +1,107 @@
+<!-- بطاقة موقعك الحالي (تظهر عند البحث بالـ GPS) -->
+{% if is_gps_search %}
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">📍</span>
+      <div>
+        <h4 class="font-bold text-blue-900 text-sm">موقعك الحالي المفعل</h4>
+        <p class="text-xs text-blue-700 mt-0.5 font-semibold">
+          {% if location_name %}
+            المنطقة: {{ location_name }}
+          {% else %}
+            تم تحديد موقعك بدقة عبر الـ GPS
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <span class="text-xs bg-blue-200 text-blue-800 px-2.5 py-1 rounded-full font-semibold">
+      تم التحديد
+    </span>
+  </div>
+{% endif %}
+
+<!-- قائمة الصيدليات القريبة -->
+{% if results %}
+  <div class="grid gap-4 md:grid-cols-2">
+    {% for item in results %}
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 transition hover:shadow-md flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-start gap-2">
+            <h3 class="text-lg font-bold text-gray-900">صيدلية {{ item.pharmacy.name }}</h3>
+            {% if item.distance is not None %}
+              <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-1 rounded-full font-bold whitespace-nowrap">
+                تبعد {{ item.distance|floatformat:1 }} كم
+              </span>
+            {% endif %}
+          </div>
+          <p class="text-sm text-gray-500 mt-2 leading-relaxed">📍 {{ item.pharmacy.address_details }}</p>
+        </div>
+
+        <!-- أزرار الإجراءات: Google Maps والاتصال -->
+        <div class="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2">
+          {% if item.pharmacy.latitude and item.pharmacy.longitude %}
+            <a 
+              href="https://www.google.com/maps/dir/?api=1&destination={{ item.pharmacy.latitude }},{{ item.pharmacy.longitude }}" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5"
+            >
+              <span>🗺️</span>
+              <span>الاتجاهات</span>
+            </a>
+          {% endif %}
+
+          {% if item.pharmacy.phone %}
+            <a 
+              href="tel:{{ item.pharmacy.phone }}" 
+              class="flex-1 text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5"
+            >
+              <span>📞</span>
+              <span>اتصال</span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    (function() {
+      const userLat = {% if user_lat %}{{ user_lat }}{% else %}null{% endif %};
+      const userLng = {% if user_lng %}{{ user_lng }}{% else %}null{% endif %};
+      
+      const pharmacies = [
+        {% for item in results %}
+          {% if item.pharmacy.latitude and item.pharmacy.longitude %}
+            {
+              name: "{{ item.pharmacy.name|escapejs }}",
+              address: "{{ item.pharmacy.address_details|escapejs }}",
+              lat: parseFloat("{{ item.pharmacy.latitude }}"),
+              lng: parseFloat("{{ item.pharmacy.longitude }}")
+            }{% if not forloop.last %},{% endif %}
+          {% endif %}
+        {% endfor %}
+      ];
+
+      if (typeof renderPharmacyMap === 'function') {
+        renderPharmacyMap(userLat, userLng, pharmacies);
+      }
+    })();
+  </script>
+
+{% elif query or is_gps_search %}
+  <div class="text-center py-8 text-gray-500 bg-white rounded-xl border border-gray-100">
+    لم يتم العثور على صيدليات مناوبة حالياً بالقرب منك.
+  </div>
+
+  <script>
+    (function() {
+      const userLat = {% if user_lat %}{{ user_lat }}{% else %}null{% endif %};
+      const userLng = {% if user_lng %}{{ user_lng }}{% else %}null{% endif %};
+
+      if (typeof renderPharmacyMap === 'function') {
+        renderPharmacyMap(userLat, userLng, []);
+      }
+    })();
+  </script>
+{% endif %}

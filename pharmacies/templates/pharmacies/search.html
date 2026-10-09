@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البحث عن صيدلية مناوبة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        #map {
+            height: 320px !important;
+            width: 100% !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+
+    <div class="max-w-2xl mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-gray-900">💊 صيدليتي المناوبة</h1>
+            <p class="text-gray-500 mt-2">ابحث عن أقرب صيدلية مناوبة في منطقتك بسرعة وسهولة</p>
+        </header>
+
+        <!-- نموذج البحث وزر الـ GPS -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 space-y-3">
+            <div class="flex gap-2">
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ query|default:'' }}" 
+                    placeholder="اكتب اسم المنطقة، الحي، أو الصيدلية..." 
+                    class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    hx-get="{% url 'pharmacies:search' %}"
+                    hx-trigger="keyup changed delay:300ms, search"
+                    hx-target="#results-container"
+                    hx-indicator="#loading-spinner"
+                >
+            </div>
+
+            <button 
+                type="button" 
+                onclick="getLocation()"
+                class="w-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold py-3 px-4 rounded-xl border border-emerald-200 transition flex items-center justify-center gap-2"
+            >
+                <span>📍</span>
+                <span>تحديد أقرب صيدلية عبر موقعي الحالي (GPS)</span>
+            </button>
+        </div>
+
+        <!-- مؤشر التحميل -->
+        <div id="loading-spinner" class="htmx-indicator text-center py-4 text-blue-600 font-medium">
+            جاري البحث عن الصيدليات...
+        </div>
+
+        <!-- حاوية الخريطة -->
+        <div id="map-container" class="mb-6 hidden">
+            <div id="map" class="rounded-2xl shadow-sm border border-gray-200 z-0"></div>
+        </div>
+
+        <!-- حاوية النتائج -->
+        <div id="results-container">
+            {% include 'pharmacies/partials/results_list.html' %}
+        </div>
+    </div>
+
+    <!-- هنا يتم وضع جميع دوال السكربت الخاصة بالصفحة الرئيسية -->
+    <script>
+    let map = null;
+    let markersGroup = null;
+
+    htmx.config.evalScripts = true;
+
+    // 1. دالة رسم الخريطة (هنا مكانها الصحيح)
+    function renderPharmacyMap(userLat, userLng, pharmacies) {
+        const container = document.getElementById('map-container');
+        if (!container) return;
+
+        if (!userLat && (!pharmacies || pharmacies.length === 0)) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        if (!map) {
+            const initialLat = userLat || (pharmacies.length > 0 ? pharmacies[0].lat : 33.5138);
+            const initialLng = userLng || (pharmacies.length > 0 ? pharmacies[0].lng : 36.2765);
+            
+            map = L.map('map').setView([initialLat, initialLng], 13);
+            
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            markersGroup = L.layerGroup().addTo(map);
+        } else {
+            markersGroup.clearLayers();
+        }
+
+        // -----------------------------------------------------------------
+        // تعريف أيقونات مخصصة بالـ HTML & Tailwind CSS
+        // -----------------------------------------------------------------
+        
+        // 1. أيقونة موقع المستخدم (دبوس أزرق نابض)
+        const userIcon = L.divIcon({
+            className: 'custom-user-pin',
+            html: `
+                <div class="relative flex items-center justify-center w-8 h-8">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-7 w-7 bg-blue-600 border-2 border-white text-white text-xs items-center justify-center font-bold shadow-md">📍</span>
+                </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        // 2. أيقونة الصيدليات المناوبة (دبوس زمردي أخضر)
+        const pharmacyIcon = L.divIcon({
+            className: 'custom-pharmacy-pin',
+            html: `
+                <div class="flex items-center justify-center w-8 h-8 bg-emerald-600 border-2 border-white rounded-full text-white text-sm shadow-md transition hover:scale-110">
+                    💊
+                </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        const bounds = [];
+
+        // إضافة دبوس موقع المستخدم بالأيقونة الزرقاء
+        if (userLat && userLng) {
+            const userMarker = L.marker([userLat, userLng], { icon: userIcon })
+                .addTo(markersGroup)
+                .bindPopup('<b class="text-blue-900">📍 موقعك الحالي</b>');
+            userMarker.openPopup();
+            bounds.push([userLat, userLng]);
+        }
+
+        // إضافة دبابيس الصيدليات بالأيقونة الخضراء
+        if (pharmacies && pharmacies.length > 0) {
+            pharmacies.forEach(function(p) {
+                if (p.lat && p.lng) {
+                    const popupContent = '<b class="text-emerald-900">💊 ' + p.name + '</b><br><span class="text-xs text-gray-600">' + p.address + '</span>';
+                    L.marker([p.lat, p.lng], { icon: pharmacyIcon })
+                        .addTo(markersGroup)
+                        .bindPopup(popupContent);
+                    bounds.push([p.lat, p.lng]);
+                }
+            });
+        }
+
+        requestAnimationFrame(function() {
+            map.invalidateSize();
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [40, 40] });
+            }
+        });
+    }
+
+    // 2. دالة جلب الموقع من الجوال/المتصفح عبر الـ GPS
+    function getLocation() {
+        const resultsContainer = document.getElementById('results-container');
+        if (!navigator.geolocation) {
+            alert('متصفحك لا يدعم تحديد الموقع الجغرافي.');
+            return;
+        }
+
+        resultsContainer.innerHTML = '<div class="text-center py-6 text-gray-500 font-medium">جاري تحديد موقعك الجغرافي...</div>';
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const searchUrl = "{% url 'pharmacies:search' %}?lat=" + lat + "&lng=" + lng;
+                
+                htmx.ajax('GET', searchUrl, { target: '#results-container', swap: 'innerHTML' });
+            },
+            function(error) {
+                let errorMsg = 'تعذر الحصول على موقعك الجغرافي.';
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMsg = 'يرجى السماح بطلب تحديد الموقع في متصفحك للحصول على النتائج القريبة.';
+                }
+                alert(errorMsg);
+                resultsContainer.innerHTML = '';
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+    </script>
+</body>
+</html>
