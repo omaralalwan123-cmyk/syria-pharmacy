@@ -132,3 +132,15 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1',
     'http://localhost',
 ]
+
+
+import os
+from dotenv import load_dotenv
+
+# تحميل المتغيرات من ملف .env
+load_dotenv()
+
+# إعدادات تلغرام
+TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID')
+TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
+TELEGRAM_CHANNEL = os.getenv('TELEGRAM_CHANNEL')
