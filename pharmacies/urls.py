@@ -1,8 +1,7 @@
-from django.urls import path
-from .views import pharmacy_search_view
-
-app_name = 'pharmacies'
+﻿from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', pharmacy_search_view, name='search'),
+    path('', views.index, name='index'),
+    path('search/', views.pharmacy_search, name='pharmacy_search'),
 ]

@@ -1,0 +1,178 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الصيدليات المناوبة - دمشق</title>
+
+    <!-- Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.35rem;
+        }
+        #map {
+            height: 420px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .pharmacy-card {
+            border: none;
+            border-radius: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .pharmacy-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i class="fa-solid fa-notes-medical fs-3"></i>
+                <span>الصيدليات المناوبة</span>
+            </a>
+            <span class="badge bg-light text-success fw-bold px-3 py-2">دمشق</span>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container my-4">
+        <!-- Hero Section -->
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h1 class="h3 fw-bold text-dark mb-2">دليل الصيدليات المناوبة في دمشق</h1>
+                <p class="text-muted">استعلام فوري وتحديد مواقع الصيدليات المناوبة بدقة على الخريطة</p>
+            </div>
+        </div>
+
+        <!-- Search Box & Locate Me Button -->
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto d-flex gap-2">
+                <div class="input-group input-group-lg shadow-sm flex-grow-1">
+                    <span class="input-group-text bg-white text-muted border-end-0">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" 
+                           class="form-control border-start-0 ps-0" 
+                           name="q" 
+                           placeholder="ابحث باسم الصيدلية أو المنطقة..."
+                           hx-get="{% url 'pharmacy_search' %}" 
+                           hx-trigger="keyup changed delay:300ms, search" 
+                           hx-target="#pharmacy-list" 
+                           hx-indicator="#loading-spinner">
+                </div>
+                <!-- زر تحديد الموقع الحالي -->
+                <button type="button" 
+                        class="btn btn-success px-3 shadow-sm d-flex align-items-center gap-2" 
+                        onclick="locateUser()" 
+                        title="تحديد موقعي الحالي">
+                    <i class="fa-solid fa-location-crosshairs fs-5"></i>
+                    <span class="d-none d-sm-inline">موقعي</span>
+                </button>
+            </div>
+            <div id="loading-spinner" class="htmx-indicator text-center mt-2">
+                <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                <span class="text-muted ms-2">جاري البحث...</span>
+            </div>
+        </div>
+
+        <!-- Map & Pharmacy Cards Split -->
+        <div class="row g-4">
+            <!-- Map Container -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm p-2">
+                    <div id="map"></div>
+                </div>
+            </div>
+
+            <!-- Pharmacy List Container -->
+            <div class="col-lg-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0"><i class="fa-solid fa-list-ul text-success me-2"></i>قائمة المناوبات</h5>
+                </div>
+                
+                <div id="pharmacy-list" class="vstack gap-2" style="max-height: 420px; overflow-y: auto;">
+                    {% include 'pharmacies/partials/pharmacy_list.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS & Map Script -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([33.5138, 36.2765], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var markers = [];
+        var userMarker = null;
+
+        function initMarkers() {
+            {% for shift in shifts %}
+                {% if shift.pharmacy.latitude and shift.pharmacy.longitude %}
+                    var m = L.marker([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}]).addTo(map)
+                        .bindPopup('<b>صيدلية {{ shift.pharmacy.name }}</b><br>📞 {{ shift.pharmacy.phone }}');
+                    markers.push(m);
+                {% endif %}
+            {% endfor %}
+        }
+
+        initMarkers();
+
+        // دالة تحديد موقع المستخدم على الخريطة
+        function locateUser() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                    }
+
+                    userMarker = L.circleMarker([lat, lng], {
+                        radius: 9,
+                        fillColor: "#0d6efd",
+                        color: "#fff",
+                        weight: 3,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(map).bindPopup("<b>موقعك الحالي</b>").openPopup();
+
+                    map.flyTo([lat, lng], 15);
+                }, function(error) {
+                    alert("تعذر تحديد موقعك الحالي. يرجى التاكد من تفعيل خدمة الـ GPS في جهازك أو المتصفح.");
+                });
+            } else {
+                alert("متصفحك لا يدعم خاصية تحديد الموقع الجغرافي.");
+            }
+        }
+    </script>
+</body>
+</html>

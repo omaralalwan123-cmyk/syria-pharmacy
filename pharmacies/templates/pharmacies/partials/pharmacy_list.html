@@ -1,0 +1,32 @@
+﻿{% if shifts %}
+    {% for shift in shifts %}
+    <div class="card pharmacy-card shadow-sm border-0 mb-2">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <h6 class="fw-bold mb-1 text-success">
+                    <i class="fa-solid fa-prescription-bottle-medical me-1"></i>
+                    صيدلية {{ shift.pharmacy.name }}
+                </h6>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">مناوبة</span>
+            </div>
+            <p class="text-muted small mb-2">
+                <i class="fa-solid fa-location-dot text-danger me-1"></i> {{ shift.pharmacy.address_details }}
+            </p>
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="tel:{{ shift.pharmacy.phone }}" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                    <i class="fa-solid fa-phone me-1"></i> {{ shift.pharmacy.phone }}
+                </a>
+                <button class="btn btn-sm btn-light rounded-circle" 
+                        onclick="map.flyTo([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}], 16)">
+                    <i class="fa-solid fa-crosshairs text-secondary"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center py-4 text-muted">
+        <i class="fa-solid fa-magnifying-glass-minus fs-2 mb-2 d-block"></i>
+        لا توجد صيدليات مطابقة لنص البحث
+    </div>
+{% endif %}
