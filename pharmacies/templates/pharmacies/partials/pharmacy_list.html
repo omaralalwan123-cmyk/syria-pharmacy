@@ -9,15 +9,18 @@
                 </h6>
                 <span class="badge bg-success-subtle text-success border border-success-subtle">مناوبة</span>
             </div>
-            <p class="text-muted small mb-2">
-                <i class="fa-solid fa-location-dot text-danger me-1"></i> {{ shift.pharmacy.address_details }}
+            <!-- عرض العنوان التفصيلي بوضوح لضمان دقة البحث -->
+            <p class="text-secondary small mb-2">
+                <i class="fa-solid fa-location-dot text-danger me-1"></i> 
+                <span class="fw-semibold">المنطقة/العنوان:</span> {{ shift.pharmacy.address_details|default:"دمشق - تفاصيل غير متوفرة" }}
             </p>
             <div class="d-flex justify-content-between align-items-center">
                 <a href="tel:{{ shift.pharmacy.phone }}" class="btn btn-sm btn-outline-success rounded-pill px-3">
                     <i class="fa-solid fa-phone me-1"></i> {{ shift.pharmacy.phone }}
                 </a>
                 <button class="btn btn-sm btn-light rounded-circle" 
-                        onclick="map.flyTo([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}], 16)">
+                        onclick="map.flyTo([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}], 16)"
+                        title="عرض على الخريطة">
                     <i class="fa-solid fa-crosshairs text-secondary"></i>
                 </button>
             </div>

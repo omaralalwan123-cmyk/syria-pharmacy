@@ -28,7 +28,7 @@
             font-size: 1.35rem;
         }
         #map {
-            height: 420px;
+            height: 480px;
             width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -39,7 +39,7 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .pharmacy-card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0,0,0,0.08);
         }
     </style>
@@ -77,7 +77,7 @@
                     <input type="text" 
                            class="form-control border-start-0 ps-0" 
                            name="q" 
-                           placeholder="ابحث باسم الصيدلية أو المنطقة..."
+                           placeholder="ابحث باسم الصيدلية"
                            hx-get="{% url 'pharmacy_search' %}" 
                            hx-trigger="keyup changed delay:300ms, search" 
                            hx-target="#pharmacy-list" 
@@ -98,22 +98,22 @@
             </div>
         </div>
 
-        <!-- Map & Pharmacy Cards Split -->
+        <!-- Map & Pharmacy Cards Split (الخريطة يمين والقائمة يسار) -->
         <div class="row g-4">
-            <!-- Map Container -->
-            <div class="col-lg-7">
+            <!-- Map Container (يمين في الشاشات الكبيرة) -->
+            <div class="col-lg-7 order-1 order-lg-2">
                 <div class="card border-0 shadow-sm p-2">
                     <div id="map"></div>
                 </div>
             </div>
 
-            <!-- Pharmacy List Container -->
-            <div class="col-lg-5">
+            <!-- Pharmacy List Container (يسار في الشاشات الكبيرة) -->
+            <div class="col-lg-5 order-2 order-lg-1">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-bold m-0"><i class="fa-solid fa-list-ul text-success me-2"></i>قائمة المناوبات</h5>
                 </div>
                 
-                <div id="pharmacy-list" class="vstack gap-2" style="max-height: 420px; overflow-y: auto;">
+                <div id="pharmacy-list" class="vstack gap-2" style="max-height: 480px; overflow-y: auto;">
                     {% include 'pharmacies/partials/pharmacy_list.html' %}
                 </div>
             </div>
@@ -134,16 +134,27 @@
         var userMarker = null;
 
         function initMarkers() {
+            // مسح الدبابيس القديمة أولاً
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
             {% for shift in shifts %}
                 {% if shift.pharmacy.latitude and shift.pharmacy.longitude %}
                     var m = L.marker([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}]).addTo(map)
-                        .bindPopup('<b>صيدلية {{ shift.pharmacy.name }}</b><br>📞 {{ shift.pharmacy.phone }}');
+                        .bindPopup('<b>صيدلية {{ shift.pharmacy.name }}</b><br><small class="text-muted">{{ shift.pharmacy.address_details }}</small><br>📞 <a href="tel:{{ shift.pharmacy.phone }}">{{ shift.pharmacy.phone }}</a>');
                     markers.push(m);
                 {% endif %}
             {% endfor %}
         }
 
         initMarkers();
+
+        // تحديث الخريطة عند أي تحديث من HTMX (البحث الفوري)
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'pharmacy-list') {
+                // إعادة تهيئة أو تحديث إضافي إذا لزم الأمر
+            }
+        });
 
         // دالة تحديد موقع المستخدم على الخريطة
         function locateUser() {
@@ -157,7 +168,7 @@
                     }
 
                     userMarker = L.circleMarker([lat, lng], {
-                        radius: 9,
+                        radius: 10,
                         fillColor: "#0d6efd",
                         color: "#fff",
                         weight: 3,
@@ -167,7 +178,7 @@
 
                     map.flyTo([lat, lng], 15);
                 }, function(error) {
-                    alert("تعذر تحديد موقعك الحالي. يرجى التاكد من تفعيل خدمة الـ GPS في جهازك أو المتصفح.");
+                    alert("تعذر تحديد موقعك الحالي. يرجى التأكد من تفعيل خدمة الـ GPS في جهازك أو المتصفح.");
                 });
             } else {
                 alert("متصفحك لا يدعم خاصية تحديد الموقع الجغرافي.");

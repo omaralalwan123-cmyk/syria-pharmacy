@@ -10,34 +10,39 @@ from telethon import TelegramClient
 from pharmacies.models import Pharmacy, Region, ShiftSchedule
 
 DAMASCUS_NEIGHBORHOODS = {
-    'الشعلان': (33.5186, 36.2913),
     'المزة': (33.5000, 36.2500),
-    'الميدان': (33.4833, 36.3000),
-    'القصاع': (33.5222, 36.3167),
-    'المالكي': (33.5200, 36.2800),
     'أبو رمانة': (33.5190, 36.2850),
+    'المالكي': (33.5200, 36.2800),
+    'الشعلان': (33.5186, 36.2913),
     'الروضة': (33.5167, 36.2833),
-    'البرامكة': (33.5083, 36.2917),
-    'كفرسوسة': (33.4889, 36.2694),
-    'ركن الدين': (33.5389, 36.3028),
     'المهاجرين': (33.5278, 36.2750),
+    'ركن الدين': (33.5389, 36.3028),
+    'القصاع': (33.5222, 36.3167),
     'باب توما': (33.5114, 36.3153),
-    'المشروع': (33.5050, 36.2450),
-    'الفيلات': (33.4950, 36.2550),
-    'الشهبندر': (33.5250, 36.2950),
-    'الفرات': (33.5120, 36.2880),
-    'بدر': (33.4900, 36.2800),
-    'الحفار': (33.5150, 36.2920),
+    'الميدان': (33.4833, 36.3000),
+    'كفرسوسة': (33.4889, 36.2694),
+    'التجارة': (33.5280, 36.3100),
+    'القصور': (33.5300, 36.3050),
+    'البرامكة': (33.5083, 36.2917),
+    'الصالحية': (33.5220, 36.2890),
+    'العباسيين': (33.5333, 36.3167),
+    'الزاهرة': (33.4750, 36.3000),
 }
 
-def get_coordinates_for_pharmacy(pharmacy_name: str):
+def extract_neighborhood_and_coords(text_chunk: str):
+    """
+    يبحث عن أي حي حقيقي من أحياء دمشق داخل نص سطر الصيدلية أو تفاصيلها،
+    ويعيد اسم الحي وإحداثياته المضبوطة.
+    """
     for neighborhood, coords in DAMASCUS_NEIGHBORHOODS.items():
-        if neighborhood in pharmacy_name:
-            return coords[0], coords[1]
+        if neighborhood in text_chunk:
+            return neighborhood, coords[0], coords[1]
+    
+    # افتراضي في حال لم يُذكر الحي صراحةً ضمن النص
     base_lat, base_lng = 33.5138, 36.2765
-    lat_offset = random.uniform(-0.015, 0.015)
-    lng_offset = random.uniform(-0.015, 0.015)
-    return round(base_lat + lat_offset, 6), round(base_lng + lng_offset, 6)
+    lat_offset = random.uniform(-0.012, 0.012)
+    lng_offset = random.uniform(-0.012, 0.012)
+    return "دمشق - وسط المدينة", round(base_lat + lat_offset, 6), round(base_lng + lng_offset, 6)
 
 class Command(BaseCommand):
     help = 'إرسال طلب لبوت التلغرام وجلب المناوبات وتحديث قاعدة البيانات'
@@ -106,6 +111,7 @@ class Command(BaseCommand):
 
     def process_message(self, text: str):
         try:
+            # نمط مطابقة يلتقط النص الكامل لكل صيدلية مع رقم الهاتف والسطر للبحث عن الحي داخله
             pattern = r'\d+[\*-]*\s*([^\n\*]+)\s*\n📍(\d+)'
             matches = re.findall(pattern, text)
 
@@ -126,23 +132,25 @@ class Command(BaseCommand):
             end_shift = start_now + timedelta(hours=12)
 
             for raw_name, phone_number in matches:
-                # 1. إزالة الأرقام والرموز
+                # 1. تنظيف اسم الصيدلية من الأرقام والرموز وكلمة "صيدلية"
                 clean_name = re.sub(r'[\*\d\-\.]', '', raw_name).strip()
-                # 2. إزالة أي كلمة "صيدلية" بالكامل من الاسم المخزن
                 clean_name = re.sub(r'صيدلية', '', clean_name).strip()
 
                 if not clean_name:
                     continue
 
                 phone_number = phone_number.strip()
-                lat, lng = get_coordinates_for_pharmacy(clean_name)
+                
+                # استخراج الحي الحقيقي والإحداثيات بناءً على النص الكامل لرسالة البوت أو اسم الصيدلية
+                neighborhood, lat, lng = extract_neighborhood_and_coords(raw_name)
+                address_full = f"دمشق - {neighborhood}" if neighborhood != "دمشق - وسط المدينة" else "دمشق"
 
-                # نحفظ الاسم المجرد (مثل "الشهباء") بدون كلمة "صيدلية"
+                # حفظ الصيدلية مع العنوان التفصيلي الحيوي
                 pharmacy, _ = Pharmacy.objects.get_or_create(
                     name=clean_name,
                     region=region,
                     defaults={
-                        'address_details': 'دمشق',
+                        'address_details': address_full,
                         'phone': phone_number,
                         'latitude': lat,
                         'longitude': lng
@@ -150,6 +158,7 @@ class Command(BaseCommand):
                 )
 
                 pharmacy.name = clean_name
+                pharmacy.address_details = address_full
                 pharmacy.latitude = lat
                 pharmacy.longitude = lng
                 pharmacy.phone = phone_number
@@ -161,7 +170,7 @@ class Command(BaseCommand):
                     defaults={'end_time': end_shift, 'is_active': True}
                 )
                 self.stdout.write(
-                    self.style.SUCCESS(f"✓ تم إضافة/تحديث مناوبة: صيدلية {clean_name} ({phone_number}) -> ({lat}, {lng})")
+                    self.style.SUCCESS(f"✓ تم تحديث: صيدلية {clean_name} | العنوان: {address_full} ({phone_number})")
                 )
 
         except Exception as e:

@@ -10,7 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# تحميل المتغيرات من ملف .env (إن وجد محلياً)
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-s+1jhggk-r=6h1a(@f#h@71d!f!0s&@(3*8g6rx2!cs0@dzr3-"
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-s+1jhggk-r=6h1a(@f#h@71d!f!0s&@(3*8g6rx2!cs0@dzr3-")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# سيتم قراءة DEBUG من متغيرات البيئة، وإذا لم توجد سيكون False افتراضياً في الإنتاج
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app', '.onrender.com']
 
 
 # Application definition
@@ -43,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # <--- ضروري لملفات الـ Static على Render
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -69,6 +76,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "core.wsgi.application"
+ASGI_APPLICATION = "core.asgi.application"
 
 
 # Database
@@ -117,29 +125,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
-# settings.py
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app']
-
-# في إصدارات Django الحديثة (4.0+) يجب تحديد Trusted Origins إذا كنت تستخدم HTTPS/Ngrok
+# CSRF Trusted Origins لأجل Ngrok و Render
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
+    'https://*.onrender.com',
     'http://127.0.0.1',
     'http://localhost',
 ]
-
-
-import os
-from dotenv import load_dotenv
-
-# تحميل المتغيرات من ملف .env
-load_dotenv()
 
 # إعدادات تلغرام
 TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID')
