@@ -30,7 +30,11 @@ if not SECRET_KEY and not DEBUG:
     raise ValueError("SECRET_KEY must be set in production")
 
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "syria-pharmacy-7718.onbelmo.uk",
+]
 
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 
@@ -156,10 +160,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'https://*.onrender.com',
+    'https://*.onbelmo.uk',
     'http://127.0.0.1',
     'http://localhost',
 ]
-
 # إعدادات تلغرام
 TELEGRAM_API_ID = os.getenv('TELEGRAM_API_ID')
 TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH')
