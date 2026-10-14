@@ -29,6 +29,15 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 if not SECRET_KEY and not DEBUG:
     raise ValueError("SECRET_KEY must be set in production")
 
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+
 # Application definition
 
 INSTALLED_APPS = [
