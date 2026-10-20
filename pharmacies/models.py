@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -44,8 +45,25 @@ class Pharmacy(models.Model):
         verbose_name="المنطقة"
     )
     address_details = models.TextField(verbose_name="تفاصيل العنوان النصي")
-    latitude = models.FloatField(verbose_name="خط العرض")
-    longitude = models.FloatField(verbose_name="خط الطول")
+    latitude = models.FloatField(
+        validators=[MinValueValidator(-90), MaxValueValidator(90)],
+        verbose_name="خط العرض",
+    )
+    longitude = models.FloatField(
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+        verbose_name="خط الطول",
+    )
+    location_is_verified = models.BooleanField(
+        default=False,
+        verbose_name="موقع الصيدلية مؤكد",
+        help_text="فعّل هذا الخيار للمواقع التي تم تحديدها بدقة من الخريطة.",
+    )
+    location_lookup_attempted_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        db_index=True,
+        verbose_name="آخر بحث عن الموقع",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -78,3 +96,27 @@ class ShiftSchedule(models.Model):
 
     def __str__(self) -> str:
         return f"مناوبة {self.pharmacy.name}"
+
+
+class TelegramBotMessage(models.Model):
+    bot_username = models.CharField(max_length=255)
+    chat_id = models.BigIntegerField()
+    telegram_message_id = models.BigIntegerField()
+    message_date = models.DateTimeField(null=True, blank=True)
+    text = models.TextField(blank=True)
+    raw_payload = models.TextField()
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "رسالة بوت تلغرام"
+        verbose_name_plural = "رسائل بوت تلغرام"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["chat_id", "telegram_message_id"],
+                name="unique_telegram_bot_message",
+            )
+        ]
+        ordering = ["-message_date", "-telegram_message_id"]
+
+    def __str__(self) -> str:
+        return f"@{self.bot_username}: {self.telegram_message_id}"

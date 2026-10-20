@@ -19,65 +19,321 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
     <style>
+        :root {
+            --ink: #18342d;
+            --muted: #71817b;
+            --green: #167451;
+            --green-dark: #105b40;
+            --green-soft: #e9f5ef;
+            --canvas: #f4f7f5;
+            --line: #e7eeea;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
+            min-height: 100vh;
+            color: var(--ink);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(ellipse at 8% 0%, rgba(220, 239, 229, 0.68), transparent 30rem),
+                var(--canvas);
         }
+
+        .site-navbar {
+            background: rgba(255, 255, 255, 0.94);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(14px);
+        }
+
         .navbar-brand {
-            font-weight: 700;
-            font-size: 1.35rem;
+            color: var(--ink) !important;
+            font-size: 1.12rem;
+            font-weight: 750;
+            letter-spacing: -0.02em;
         }
+
+        .brand-mark {
+            display: grid;
+            width: 42px;
+            height: 42px;
+            place-items: center;
+            color: #fff;
+            background: linear-gradient(145deg, #26966b, var(--green-dark));
+            border-radius: 15px;
+            box-shadow: 0 7px 16px rgba(22, 116, 81, 0.18);
+        }
+
+        .city-badge {
+            color: var(--green-dark);
+            background: var(--green-soft);
+            border: 1px solid #d8ecdf;
+            border-radius: 999px;
+            font-size: 0.82rem;
+        }
+
+        .page-shell {
+            max-width: 1320px;
+            padding-bottom: 2rem;
+        }
+
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(1.6rem, 4vw, 2.8rem);
+            color: #fff;
+            background:
+                radial-gradient(circle at 90% 15%, rgba(255, 255, 255, 0.16), transparent 13rem),
+                linear-gradient(120deg, #155c43 0%, #187552 56%, #238863 100%);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 26px;
+            box-shadow: 0 18px 42px rgba(24, 89, 64, 0.14);
+        }
+
+        .hero-panel::after {
+            position: absolute;
+            right: -3rem;
+            bottom: -6rem;
+            width: 17rem;
+            height: 17rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            box-shadow: 0 0 0 2rem rgba(255, 255, 255, 0.035), 0 0 0 4rem rgba(255, 255, 255, 0.025);
+            content: "";
+            pointer-events: none;
+        }
+
+        .hero-panel h1 {
+            color: #fff !important;
+            font-size: clamp(1.55rem, 3vw, 2.15rem);
+            letter-spacing: -0.035em;
+        }
+
+        .hero-panel p {
+            max-width: 42rem;
+            margin: 0 auto;
+            color: rgba(255, 255, 255, 0.78) !important;
+            line-height: 1.8;
+        }
+
+        .search-section {
+            position: relative;
+            z-index: 1;
+        }
+
+        .search-controls {
+            padding: 0.65rem;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 10px 28px rgba(28, 64, 49, 0.07) !important;
+        }
+
+        .search-controls .input-group {
+            min-width: 0;
+            box-shadow: none !important;
+        }
+
+        .search-controls .input-group-text,
+        .search-controls .form-control {
+            min-height: 52px;
+            background: #fff;
+            border-color: transparent;
+        }
+
+        .search-controls .input-group-text {
+            padding-inline: 1rem 0.55rem;
+            color: var(--green);
+            border-radius: 14px 0 0 14px !important;
+        }
+
+        .search-controls .form-control {
+            color: var(--ink);
+            font-size: 0.97rem;
+            border-radius: 0 14px 14px 0 !important;
+        }
+
+        .search-controls .form-control:focus {
+            box-shadow: none;
+        }
+
+        .search-controls .form-control::placeholder {
+            color: #9aa8a2;
+        }
+
+        .locate-button {
+            min-height: 52px;
+            padding-inline: 1.15rem !important;
+            color: #fff !important;
+            background: var(--green) !important;
+            border: 0 !important;
+            border-radius: 14px !important;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .locate-button:hover {
+            background: var(--green-dark) !important;
+            transform: translateY(-1px);
+        }
+
+        .htmx-indicator {
+            color: var(--muted);
+        }
+
+        .content-panel {
+            height: 100%;
+            padding: 0.75rem;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            box-shadow: 0 12px 34px rgba(28, 64, 49, 0.06);
+        }
+
         #map {
-            height: 420px;
+            height: 440px;
             width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 16px;
         }
+
+        .section-heading {
+            padding: 0.35rem 0.35rem 0.9rem;
+            color: var(--ink);
+            font-size: 1.05rem;
+            font-weight: 750;
+        }
+
+        .section-heading i {
+            color: var(--green);
+        }
+
+        .pharmacy-results {
+            max-height: 440px;
+            padding: 0 0.25rem 0.25rem;
+            overflow-y: auto;
+            scrollbar-color: #c8d9d0 transparent;
+            scrollbar-width: thin;
+        }
+
         .pharmacy-card {
-            border: none;
-            border-radius: 10px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--line) !important;
+            border-radius: 17px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
+
         .pharmacy-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+            border-color: #cfe5d8 !important;
+            box-shadow: 0 12px 26px rgba(28, 64, 49, 0.1) !important;
+        }
+
+        .pharmacy-card .card-body {
+            padding: 1rem !important;
+        }
+
+        .pharmacy-card h6 {
+            color: var(--ink) !important;
+            line-height: 1.55;
+        }
+
+        .pharmacy-card h6 i {
+            color: var(--green);
+        }
+
+        .pharmacy-card .badge {
+            padding: 0.4rem 0.65rem;
+            font-weight: 650;
+        }
+
+        .pharmacy-card p {
+            color: var(--muted) !important;
+            line-height: 1.6;
+        }
+
+        .pharmacy-card .btn-outline-success {
+            color: var(--green);
+            border-color: #cfe5d8;
+        }
+
+        .pharmacy-card .btn-outline-success:hover {
+            color: #fff;
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .pharmacy-card .btn-light {
+            width: 36px;
+            height: 36px;
+            background: var(--green-soft);
+        }
+
+        @media (max-width: 575.98px) {
+            .page-shell {
+                margin-top: 1rem !important;
+            }
+
+            .hero-panel {
+                border-radius: 21px;
+            }
+
+            .search-controls {
+                gap: 0.45rem !important;
+                padding: 0.5rem;
+            }
+
+            .locate-button {
+                min-width: 50px;
+                justify-content: center;
+                padding-inline: 0.85rem !important;
+            }
+
+            .content-panel {
+                padding: 0.55rem;
+                border-radius: 18px;
+            }
+
+            #map {
+                height: 340px;
+            }
+
+            .pharmacy-results {
+                max-height: 400px;
+            }
         }
     </style>
 </head>
 <body>
 
     <!-- Navbar Header -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm">
+    <nav class="navbar navbar-expand-lg site-navbar">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <i class="fa-solid fa-notes-medical fs-3"></i>
+                <span class="brand-mark"><i class="fa-solid fa-notes-medical"></i></span>
                 <span>الصيدليات المناوبة</span>
             </a>
-            <span class="badge bg-light text-success fw-bold px-3 py-2">دمشق</span>
+            <span class="badge city-badge fw-bold px-3 py-2">دمشق</span>
         </div>
     </nav>
 
     <!-- Main Container -->
-    <div class="container my-4">
+    <main class="container page-shell my-4">
         <!-- Hero Section -->
-        <div class="row mb-4">
-            <div class="col-12 text-center">
-                <h1 class="h3 fw-bold text-dark mb-2">دليل الصيدليات المناوبة في دمشق</h1>
-                <p class="text-muted">استعلام فوري وتحديد مواقع الصيدليات المناوبة بدقة على الخريطة</p>
-            </div>
-        </div>
+        <section class="hero-panel text-center mb-4">
+            <h1 class="h3 fw-bold mb-2">دليل الصيدليات المناوبة في دمشق</h1>
+            <p>استعلام فوري وتحديد مواقع الصيدليات المناوبة بدقة على الخريطة</p>
+        </section>
 
         <!-- Search Box & Locate Me Button -->
-        <div class="row mb-4">
-            <div class="col-md-8 mx-auto d-flex gap-2">
-                <div class="input-group input-group-lg shadow-sm flex-grow-1">
+        <div class="row mb-4 search-section">
+            <div class="col-md-8 mx-auto d-flex gap-2 search-controls">
+                <div class="input-group input-group-lg flex-grow-1">
                     <span class="input-group-text bg-white text-muted border-end-0">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
                     <input type="text" 
                            class="form-control border-start-0 ps-0" 
                            name="q" 
-                           placeholder="ابحث باسم الصيدلية أو المنطقة..."
+                           placeholder="ابحث باسم الصيدلية..."
                            hx-get="{% url 'pharmacy_search' %}" 
                            hx-trigger="keyup changed delay:300ms, search" 
                            hx-target="#pharmacy-list" 
@@ -85,7 +341,7 @@
                 </div>
                 <!-- زر تحديد الموقع الحالي -->
                 <button type="button" 
-                        class="btn btn-success px-3 shadow-sm d-flex align-items-center gap-2" 
+                        class="btn locate-button d-flex align-items-center gap-2"
                         onclick="locateUser()" 
                         title="تحديد موقعي الحالي">
                     <i class="fa-solid fa-location-crosshairs fs-5"></i>
@@ -99,26 +355,26 @@
         </div>
 
         <!-- Map & Pharmacy Cards Split -->
-        <div class="row g-4">
+        <div class="row g-4 align-items-stretch">
             <!-- Map Container -->
             <div class="col-lg-7">
-                <div class="card border-0 shadow-sm p-2">
+                <section class="content-panel">
                     <div id="map"></div>
-                </div>
+                </section>
             </div>
 
             <!-- Pharmacy List Container -->
             <div class="col-lg-5">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold m-0"><i class="fa-solid fa-list-ul text-success me-2"></i>قائمة المناوبات</h5>
-                </div>
+                <section class="content-panel">
+                    <h2 class="section-heading m-0"><i class="fa-solid fa-list-ul me-2"></i>قائمة المناوبات</h2>
                 
-                <div id="pharmacy-list" class="vstack gap-2" style="max-height: 420px; overflow-y: auto;">
-                    {% include 'pharmacies/partials/pharmacy_list.html' %}
-                </div>
+                    <div id="pharmacy-list" class="vstack gap-2 pharmacy-results">
+                        {% include 'pharmacies/partials/pharmacy_list.html' %}
+                    </div>
+                </section>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- Leaflet JS & Map Script -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -133,17 +389,47 @@
         var markers = [];
         var userMarker = null;
 
-        function initMarkers() {
-            {% for shift in shifts %}
-                {% if shift.pharmacy.latitude and shift.pharmacy.longitude %}
-                    var m = L.marker([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}]).addTo(map)
-                        .bindPopup('<b>صيدلية {{ shift.pharmacy.name }}</b><br>📞 {{ shift.pharmacy.phone }}');
-                    markers.push(m);
-                {% endif %}
-            {% endfor %}
+        function renderPharmacyMarkers() {
+            markers.forEach(function(marker) {
+                map.removeLayer(marker);
+            });
+            markers = [];
+
+            document.querySelectorAll('#pharmacy-list [data-pharmacy-latitude][data-pharmacy-longitude]')
+                .forEach(function(card) {
+                    var latitude = Number.parseFloat(card.dataset.pharmacyLatitude);
+                    var longitude = Number.parseFloat(card.dataset.pharmacyLongitude);
+                    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                        return;
+                    }
+
+                    var popup = document.createElement('div');
+                    var name = document.createElement('strong');
+                    name.textContent = 'صيدلية ' + card.dataset.pharmacyName;
+                    popup.appendChild(name);
+
+                    if (card.dataset.pharmacyAddress) {
+                        popup.appendChild(document.createElement('br'));
+                        popup.appendChild(document.createTextNode(card.dataset.pharmacyAddress));
+                    }
+
+                    if (card.dataset.pharmacyPhone) {
+                        popup.appendChild(document.createElement('br'));
+                        popup.appendChild(document.createTextNode('الهاتف: ' + card.dataset.pharmacyPhone));
+                    }
+
+                    markers.push(
+                        L.marker([latitude, longitude]).addTo(map).bindPopup(popup)
+                    );
+                });
         }
 
-        initMarkers();
+        renderPharmacyMarkers();
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.id === 'pharmacy-list') {
+                renderPharmacyMarkers();
+            }
+        });
 
         // دالة تحديد موقع المستخدم على الخريطة
         function locateUser() {

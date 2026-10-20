@@ -34,7 +34,6 @@ class PharmacySearchService:
 
         active_shifts = ShiftSchedule.objects.active_now()
 
-        # 1. البحث عن مناطق مطابقة
         matched_regions = Region.objects.filter(
             Q(name__icontains=clean_query) |
             Q(city__icontains=clean_query) |
@@ -42,10 +41,8 @@ class PharmacySearchService:
         )
 
         if matched_regions.exists():
-            # فلترة المناوبات التابعة للمناطق المطابقة
             region_shifts = active_shifts.filter(pharmacy__region__in=matched_regions)
             
-            # إذا وُجدت صيدليات مناوبة في هذه المنطقة، نعيدها مرتبة حسب المسافة من مركز المنطقة
             if region_shifts.exists():
                 target_region = matched_regions.first()
                 return cls._rank_pharmacies_by_coordinates(
@@ -54,7 +51,6 @@ class PharmacySearchService:
                     ref_lng=target_region.center_longitude
                 )
 
-        # 2. في حال عدم وجود مناوبات بالمنطقة، أو عدم مطابقة منطقة، نبحث في أسماء وعناوين الصيدليات
         matched_shifts = active_shifts.filter(
             Q(pharmacy__name__icontains=clean_query) |
             Q(pharmacy__address_details__icontains=clean_query)
