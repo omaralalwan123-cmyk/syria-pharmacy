@@ -422,7 +422,7 @@ class TelegramBotMessageTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="pharmacy-location-map"')
-        self.assertContains(response, "admin_pharmacy_map.js")
+        self.assertContains(response, "pharmacies/admin_pharmacy_map.")
 
     def test_damascus_roster_selection_clicks_required_buttons_in_order(self):
         command = Command(stdout=StringIO())

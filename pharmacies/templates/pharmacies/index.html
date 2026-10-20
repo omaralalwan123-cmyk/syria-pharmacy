@@ -431,6 +431,13 @@
             }
         });
 
+        // تحديث الخريطة عند أي تحديث من HTMX (البحث الفوري)
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'pharmacy-list') {
+                // إعادة تهيئة أو تحديث إضافي إذا لزم الأمر
+            }
+        });
+
         // دالة تحديد موقع المستخدم على الخريطة
         function locateUser() {
             if (navigator.geolocation) {
@@ -443,7 +450,7 @@
                     }
 
                     userMarker = L.circleMarker([lat, lng], {
-                        radius: 9,
+                        radius: 10,
                         fillColor: "#0d6efd",
                         color: "#fff",
                         weight: 3,
@@ -453,7 +460,7 @@
 
                     map.flyTo([lat, lng], 15);
                 }, function(error) {
-                    alert("تعذر تحديد موقعك الحالي. يرجى التاكد من تفعيل خدمة الـ GPS في جهازك أو المتصفح.");
+                    alert("تعذر تحديد موقعك الحالي. يرجى التأكد من تفعيل خدمة الـ GPS في جهازك أو المتصفح.");
                 });
             } else {
                 alert("متصفحك لا يدعم خاصية تحديد الموقع الجغرافي.");

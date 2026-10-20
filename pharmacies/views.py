@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render
+from django.shortcuts import render
 from django.db.models import (
     BooleanField,
     Case,
@@ -11,8 +11,10 @@ from django.db.models import (
     Value,
     When,
 )
+from django.http import HttpResponseBadRequest
 from django.utils import timezone
 from .models import ShiftSchedule
+from .services import calculate_haversine_distance
 
 
 def _current_or_upcoming_pharmacy_shifts():
@@ -49,7 +51,6 @@ def _current_or_upcoming_pharmacy_shifts():
         )
     )
 
-
 def index(request):
     shifts = _current_or_upcoming_pharmacy_shifts()
     return render(request, 'pharmacies/index.html', {'shifts': shifts})
@@ -57,6 +58,8 @@ def index(request):
 
 def pharmacy_search(request):
     query = request.GET.get('q', '').strip()
+    latitude = request.GET.get('lat')
+    longitude = request.GET.get('lng')
     
     shifts = _current_or_upcoming_pharmacy_shifts()
     
@@ -66,5 +69,26 @@ def pharmacy_search(request):
             Q(pharmacy__phone__icontains=query) |
             Q(pharmacy__address_details__icontains=query)
         )
-        
-    return render(request, 'pharmacies/partials/pharmacy_list.html', {'shifts': shifts})
+    elif latitude and longitude:
+        try:
+            user_latitude = float(latitude)
+            user_longitude = float(longitude)
+        except ValueError:
+            return HttpResponseBadRequest("Invalid latitude or longitude.")
+        if not -90 <= user_latitude <= 90 or not -180 <= user_longitude <= 180:
+            return HttpResponseBadRequest("Latitude or longitude is out of range.")
+        shifts = sorted(
+            shifts,
+            key=lambda shift: calculate_haversine_distance(
+                user_latitude,
+                user_longitude,
+                shift.pharmacy.latitude,
+                shift.pharmacy.longitude,
+            ),
+        )
+
+    return render(
+        request,
+        'pharmacies/partials/pharmacy_list.html',
+        {'shifts': shifts, 'query': query},
+    )

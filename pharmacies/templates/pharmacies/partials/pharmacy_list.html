@@ -39,7 +39,8 @@
                 {% endif %}
                 {% if shift.pharmacy.location_is_verified or shift.pharmacy.address_details != 'دمشق - الموقع التفصيلي غير متوفر' %}
                 <button class="btn btn-sm btn-light rounded-circle" 
-                        onclick="map.flyTo([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}], 16)">
+                        onclick="map.flyTo([{{ shift.pharmacy.latitude }}, {{ shift.pharmacy.longitude }}], 16)"
+                        title="عرض على الخريطة">
                     <i class="fa-solid fa-crosshairs text-secondary"></i>
                 </button>
                 {% endif %}

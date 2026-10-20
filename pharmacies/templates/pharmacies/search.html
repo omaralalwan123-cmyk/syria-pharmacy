@@ -23,7 +23,7 @@
     <div class="max-w-2xl mx-auto px-4 py-8">
         <header class="text-center mb-8">
             <h1 class="text-3xl font-extrabold text-gray-900">💊 الصيدليات المناوبة </h1>
-            <p class="text-gray-500 mt-2">ابحث عن أقرب صيدلية مناوبة في منطقتك بسرعة وسهولة</p>
+            <p class="text-gray-500 mt-2">ابحث عن أقرب صيدلية مناوبة في دمشق بسرعة وسهولة</p>
         </header>
 
         <!-- نموذج البحث وزر الـ GPS -->
@@ -33,9 +33,9 @@
                     type="text" 
                     name="q" 
                     value="{{ query|default:'' }}" 
-                    placeholder="اكتب اسم المنطقة، الحي، أو الصيدلية..." 
+                    placeholder="ابحث باسم الصيدلية فقط..."
                     class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    hx-get="{% url 'pharmacies:search' %}"
+                    hx-get="{% url 'pharmacy_search' %}"
                     hx-trigger="keyup changed delay:300ms, search"
                     hx-target="#results-container"
                     hx-indicator="#loading-spinner"
@@ -68,14 +68,14 @@
         </div>
     </div>
 
-    <!-- هنا يتم وضع جميع دوال السكربت الخاصة بالصفحة الرئيسية -->
+    <!-- دوال السكربت الخاصة بالصفحة والخريطة -->
     <script>
     let map = null;
     let markersGroup = null;
 
     htmx.config.evalScripts = true;
 
-    // 1. دالة رسم الخريطة (هنا مكانها الصحيح)
+    // دالة رسم الخريطة
     function renderPharmacyMap(userLat, userLng, pharmacies) {
         const container = document.getElementById('map-container');
         if (!container) return;
@@ -103,11 +103,7 @@
             markersGroup.clearLayers();
         }
 
-        // -----------------------------------------------------------------
-        // تعريف أيقونات مخصصة بالـ HTML & Tailwind CSS
-        // -----------------------------------------------------------------
-        
-        // 1. أيقونة موقع المستخدم (دبوس أزرق نابض)
+        // أيقونة موقع المستخدم (دبوس أزرق نابض)
         const userIcon = L.divIcon({
             className: 'custom-user-pin',
             html: `
@@ -120,7 +116,7 @@
             iconAnchor: [16, 16]
         });
 
-        // 2. أيقونة الصيدليات المناوبة (دبوس زمردي أخضر)
+        // أيقونة الصيدليات المناوبة (دبوس زمردي أخضر)
         const pharmacyIcon = L.divIcon({
             className: 'custom-pharmacy-pin',
             html: `
@@ -164,7 +160,7 @@
         });
     }
 
-    // 2. دالة جلب الموقع من الجوال/المتصفح عبر الـ GPS
+    // دالة جلب الموقع من الجوال/المتصفح عبر الـ GPS
     function getLocation() {
         const resultsContainer = document.getElementById('results-container');
         if (!navigator.geolocation) {
@@ -178,7 +174,7 @@
             function(position) {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                const searchUrl = "{% url 'pharmacies:search' %}?lat=" + lat + "&lng=" + lng;
+                const searchUrl = "{% url 'pharmacy_search' %}?lat=" + lat + "&lng=" + lng;
                 
                 htmx.ajax('GET', searchUrl, { target: '#results-container', swap: 'innerHTML' });
             },
